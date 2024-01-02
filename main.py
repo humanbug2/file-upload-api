@@ -87,15 +87,15 @@ def upload_files(event):
         return response
     
 def upload_file_to_s3(file):
-    file_val = file.get('filename')
+    file_val = file.get('name')
     # print("--------here", file_val)   # define the default value as well
     file_name = secure_filename(file_val)
     # print("filename" + file_name)
     try:
         # Upload the file to S3
-        s3.put_object(Bucket=S3_BUCKET_NAME, Key=file_name)
+        s3.put_object(Bucket=s3_bucket_name, Key=file_name)
         # Provide the S3 URL to the uploaded file
-        file_url = f'https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{file_name}'
+        file_url = f'https://{s3_bucket_name}.s3.{aws_region}.amazonaws.com/{file_name}'
         return {'file_name': file_name, 's3_location': file_url}
     except Exception as e:
         return {'file_name': file_name, 'error': str(e)}
