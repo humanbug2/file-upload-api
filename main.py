@@ -35,7 +35,7 @@ s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_k
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/upload")
+@app.post("/upload")
 def upload_files(event):
     try:    
         # Get the array of file objects from the request
@@ -101,7 +101,7 @@ def upload_file_to_s3(file):
         return {'file_name': file_name, 'error': str(e)}
     
 
-@app.get("/submit")
+@app.post("/submit")
 def lambda_handler(event):
     try:
         username = event.get('name')
