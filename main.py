@@ -8,10 +8,11 @@ import boto3
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-from fastapi import FastAPI
+from fastapi import FastAPI,Request
 from werkzeug.utils import secure_filename
 import concurrent.futures
 from dotenv import load_dotenv
+import ast
 
 # Load environment variables from .env file
 load_dotenv()
@@ -33,13 +34,12 @@ s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_k
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return "Hello World !!!"
 
 @app.post("/upload")
-def upload_files(event):
+def upload_files(raw_files):
     try:    
-        # Get the array of file objects from the request
-        files = event.get('files')
+        files = json.loads(raw_files.replace("'", '"'))
         # files = [
         #     {
         #         path: "error.png",
@@ -88,9 +88,7 @@ def upload_files(event):
     
 def upload_file_to_s3(file):
     file_val = file.get('name')
-    # print("--------here", file_val)   # define the default value as well
     file_name = secure_filename(file_val)
-    # print("filename" + file_name)
     try:
         # Upload the file to S3
         s3.put_object(Bucket=s3_bucket_name, Key=file_name)
@@ -102,19 +100,14 @@ def upload_file_to_s3(file):
     
 
 @app.post("/submit")
-def lambda_handler(event):
+def send_email(request: Request):
     try:
-        username = event.get('name')
-        useremail = event.get('email')
-        emailSubject = event.get('subject')
-        emailMessage = event.get('message')
-        emailAttachments = event.get('fileLocations')
-        # username = 'Manroop'
-        # useremail = 'manroop.singh@procdna.com'
-        # emailSubject = 'Testing out email'
-        # emailMessage = 'message of email'
-        # emailAttachments = ['https://auxo-form-responses.s3.amazonaws.com/General+Media+screen.png','https://auxo-form-responses.s3.amazonaws.com/Payments.png']
-
+        username = request.query_params.get("name")
+        useremail = request.query_params.get("email")
+        emailSubject = request.query_params.get("subject")
+        emailMessage = request.query_params.get("message")
+        emailAttachments = request.query_params.get("fileLocations")
+        emailAttachmentsList = ast.literal_eval(emailAttachments)
 
         # Configure SMTP
         smtp_server = 'smtp.gmail.com'
@@ -157,7 +150,7 @@ def lambda_handler(event):
             """
             msg.attach(MIMEText(body_text, 'html'))
             # Attach images
-            for url in emailAttachments:
+            for url in emailAttachmentsList:
                 response = urllib.request.urlopen(url)
                 img_data = response.read()
                 image = MIMEImage(img_data, name=os.path.basename(url))
@@ -173,12 +166,11 @@ def lambda_handler(event):
                 }
             finally:
                 server.quit()
-                
 
             # Insert data into MySQL
             try:
                 with conn.cursor() as cursor:
-                    sql = f"INSERT INTO help_section_contact_forms (name, email, subject, message, attachments) VALUES('{username}', '{useremail}', '{emailSubject}', '{emailMessage}', '{','.join(emailAttachments)}')"
+                    sql = f"INSERT INTO help_section_contact_forms (name, email, subject, message, attachments) VALUES('{username}', '{useremail}', '{emailSubject}', '{emailMessage}', '{emailAttachments}')"
                     cursor.execute(sql)
                     conn.commit()
             except Exception as e:
@@ -188,7 +180,6 @@ def lambda_handler(event):
                 }
             finally:
                 conn.close()
-                
 
             response = {
                         'statusCode': 200,
