@@ -1,24 +1,28 @@
-from typing import Union
-import json
-import os
-import psycopg2
-import urllib.request
-import smtplib
-import boto3
+import json, os, psycopg2, urllib.request, smtplib, boto3, ast, concurrent.futures
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from fastapi import FastAPI,Request
 from werkzeug.utils import secure_filename
-import concurrent.futures
 from dotenv import load_dotenv
-import ast
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from .env file
 load_dotenv()
-
+origins = [
+    "https://auxo-frontend.vercel.app",    # staging frontend
+    "https://app.auxo.tech",               # production frontend
+    "http://localhost:8000",
+    "http://localhost:3000",
+]
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Access environment variables
 s3_bucket_name = os.getenv("S3_BUCKET_NAME")
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
