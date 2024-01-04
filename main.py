@@ -29,36 +29,18 @@ auxo_staging_port = os.getenv("AUXO_STAGING_PORT")
 auxo_staging_database = os.getenv("AUXO_STAGING_DATABASE")
 auxo_staging_user = os.getenv("AUXO_STAGING_USER")
 auxo_staging_password = os.getenv("AUXO_STAGING_PASSWORD")
+api_default_endpoint = os.getenv("API_DEFAULT_ENDPOINT")
 
 s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key, region_name=aws_region)
 
-@app.get("/")
+@app.get(api_default_endpoint + "/")
 def read_root():
     return "Hello World !!!"
 
-@app.post("/upload")
+@app.post(api_default_endpoint + "/upload")
 def upload_files(raw_files):
     try:    
         files = json.loads(raw_files.replace("'", '"'))
-        # files = [
-        #     {
-        #         path: "error.png",
-        #         preview: "blob:http://localhost:3000/ad879eb3-5e8a-4ec1-bbea-556675baef14",
-        #         lastModified: 1699514748122,
-        #         name: "error.png",
-        #         size: 78938,
-        #         type: "image/png"
-        #     },
-        #     {
-        #         path: "Physician universe (selected hcp).png",
-        #         preview: "blob:http://localhost:3000/474c935e-7e1b-47de-a427-4b2c8428e9d2",
-        #         lastModified: 1698672559633,
-        #         name: "Physician universe (selected hcp).png",
-        #         size: 1541501,
-        #         type: "image/png"
-        #     }
-        # ]
-        # files = [{'filename': 'error.png'}, {'filename': 'Physician universe (selected hcp).png'}]
 
         # Handle each file in parallel using ThreadPoolExecutor
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -99,7 +81,7 @@ def upload_file_to_s3(file):
         return {'file_name': file_name, 'error': str(e)}
     
 
-@app.post("/submit")
+@app.post(api_default_endpoint + "/submit")
 def send_email(request: Request):
     try:
         username = request.query_params.get("name")
@@ -200,3 +182,23 @@ def send_email(request: Request):
             return response
     except Exception as e: 
         return {'error': e}
+
+# files = [
+        #     {
+        #         path: "error.png",
+        #         preview: "blob:http://localhost:3000/ad879eb3-5e8a-4ec1-bbea-556675baef14",
+        #         lastModified: 1699514748122,
+        #         name: "error.png",
+        #         size: 78938,
+        #         type: "image/png"
+        #     },
+        #     {
+        #         path: "Physician universe (selected hcp).png",
+        #         preview: "blob:http://localhost:3000/474c935e-7e1b-47de-a427-4b2c8428e9d2",
+        #         lastModified: 1698672559633,
+        #         name: "Physician universe (selected hcp).png",
+        #         size: 1541501,
+        #         type: "image/png"
+        #     }
+        # ]
+        # files = [{'filename': 'error.png'}, {'filename': 'Physician universe (selected hcp).png'}]
